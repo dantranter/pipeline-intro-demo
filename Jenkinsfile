@@ -21,8 +21,8 @@ pipeline {
                     def server = Artifactory.newServer url: 'https://devops-demo.app/artifactory/webapp/#/home', credentialsId: 'JFrog_Cisco'
 
                     // Read the download and upload specs:
-                    def downloadSpec = readFile 'props-download.json'
-                    def uploadSpec = readFile 'props-upload.json'
+                    def downloadSpec = readFile 'resources/props-download.json'
+                    def uploadSpec = readFile 'resources/props-upload.json'
 
                     // Download files from Artifactory:
                     def buildInfo1 = server.download spec: downloadSpec
