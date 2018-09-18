@@ -1,0 +1,8 @@
+def downloadSpec = """{
+ "files": [
+  {
+      "pattern": "target/*.jar",
+      "target": "demo-snapshot/"
+    }
+ ]
+}"""
