@@ -1,8 +1,8 @@
 {
- "files": [
-  {
+  "files": [
+    {
       "pattern": "target/*.jar",
-      "target": "demo-snapshot/",
+      "target": "demo-snapshot",
     }
- ]
+  ]
 }
