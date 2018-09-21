@@ -1,0 +1,71 @@
+pipeline {
+    agent { label "maven" }
+
+    stages {
+        stage ('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        stage ('Build') { 
+            
+            steps {
+                script {
+                    //create this in Jenkins global configuration
+                    def server = Artifactory.server('MyArtifactoryServerName')
+                    //pre-created credential
+                    server.credentialsId = 'artifactory-deployer-credential'
+                    def rtMaven = Artifactory.newMavenBuild()
+                    rtMaven.deployer releaseRepo:'my-training-release', snapshotRepo:'my-training-snapshot', server: server
+                    rtMaven.resolver releaseRepo:'my-training-group', snapshotRepo:'my-training-group', server: server
+                    
+                    //create this in Jenkins global configuration or in node configuration
+                    rtMaven.tool = 'M3'
+
+                    def buildInfo = rtMaven.run pom: 'pom.xml', goals: 'clean install'
+                    server.publishBuildInfo buildInfo
+                }
+            }
+        }
+        stage ('StaticAnalysis') {
+            //create this in Jenkins global configuration or in node configuration
+            def scannerHome = tool 'MySonarQube';
+            env.WORKSPACE = pwd() withSonarQubeEnv('MySonarQube') {
+                sh "${scannerHome}/bin/sonar-scanner " + "-Dsonar.projectKey=test " + "-Dsonar.projectName=test: " + "-Dsonar.projectVersion=${env.BUILD_TAG} " + "-Dsonar.sources=${env.WORKSPACE} " + "-Dsonar.branch=training " + "-Dsonar.dynamicAnalysis=reuseReports " + "-Dsonar.junit.reportsPath=target/surefire-reports " + "-Dsonar.jacoco.reportPath=target/jacoco.exec " + "-Dsonar.binaries=target/classes " + "-Dsonar.exclusions=
+                src/main/webapp/assets/vendor/**/*,
+                target/**/*" 
+            }
+        }
+        stage ('DockerBuild') {
+            //Ensure you have a build agent with this label
+            agent { label "docker" }
+            withDockerRegistry([credentialsId: 'docker-credential', registry: 'https://dockerregistry.mycompany.com/']) {
+                def app = docker.build("dockerregistry.mycompany.com/my-training-docker/training:${env.BUILD_TAG}", ".")
+                app.push(); 
+            }
+        }
+        stage ('DockerAppDeploy') {
+            agent { label "docker-swarm-manager" } 
+                steps {
+                    script {
+                        sh '''
+                            SERVICES=$(docker service ls --filter name=petstore --quiet | wc -l) 
+                            if [[ "$SERVICES" -eq 0 ]]; then
+                                docker service create --name petstore --replicas 1 -p {MYPORT}:8080 dockerregistry.mycompany.com/my-training-docker/training:${BUILD_NUMBER}
+                            else
+                                docker service update --image dockerregistry.mycompany.com/my-training-docker/training:${BUILD_NUMBER} petstore
+                            fi
+                        ''' 
+                    }
+                } 
+            }
+        }
+    }
+
+    post {
+        always {
+            //wipe out the working directory to ensure clean builds
+            deleteDir()
+        }
+    }
+}
