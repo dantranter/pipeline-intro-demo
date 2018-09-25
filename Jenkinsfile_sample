@@ -31,9 +31,7 @@ pipeline {
             //create this in Jenkins global configuration or in node configuration
             def scannerHome = tool 'MySonarQube';
             env.WORKSPACE = pwd() withSonarQubeEnv('MySonarQube') {
-                sh "${scannerHome}/bin/sonar-scanner " + "-Dsonar.projectKey=test " + "-Dsonar.projectName=test: " + "-Dsonar.projectVersion=${env.BUILD_TAG} " + "-Dsonar.sources=${env.WORKSPACE} " + "-Dsonar.branch=training " + "-Dsonar.dynamicAnalysis=reuseReports " + "-Dsonar.junit.reportsPath=target/surefire-reports " + "-Dsonar.jacoco.reportPath=target/jacoco.exec " + "-Dsonar.binaries=target/classes " + "-Dsonar.exclusions=
-                src/main/webapp/assets/vendor/**/*,
-                target/**/*" 
+                sh "${scannerHome}/bin/sonar-scanner " + "-Dsonar.projectKey=test " + "-Dsonar.projectName=test: " + "-Dsonar.projectVersion=${env.BUILD_TAG} " + "-Dsonar.sources=${env.WORKSPACE} " + "-Dsonar.branch=training " + "-Dsonar.dynamicAnalysis=reuseReports " + "-Dsonar.junit.reportsPath=target/surefire-reports " + "-Dsonar.jacoco.reportPath=target/jacoco.exec " + "-Dsonar.binaries=target/classes " + "-Dsonar.exclusions=src/main/webapp/assets/vendor/**/*,target/**/*" 
             }
         }
         stage ('DockerBuild') {
